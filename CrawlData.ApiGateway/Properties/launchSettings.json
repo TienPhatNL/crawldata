@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "CrawlData.ApiGateway": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

@@ -1,0 +1,199 @@
+syntax = "proto3";
+
+package crawler;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+service CrawlerService {
+  // Job Management
+  rpc StartCrawlJob(StartCrawlJobRequest) returns (CrawlJobResponse);
+  rpc GetCrawlJobStatus(GetJobStatusRequest) returns (CrawlJobStatusResponse);
+  rpc CancelCrawlJob(CancelJobRequest) returns (CancelJobResponse);
+  rpc ListCrawlJobs(ListJobsRequest) returns (ListJobsResponse);
+  
+  // URL Validation
+  rpc ValidateUrls(ValidateUrlsRequest) returns (ValidateUrlsResponse);
+  rpc CheckDomainPolicy(CheckDomainPolicyRequest) returns (DomainPolicyResponse);
+  
+  // Agent Management
+  rpc ListCrawlerAgents(ListAgentsRequest) returns (ListAgentsResponse);
+  rpc GetAgentHealth(GetAgentHealthRequest) returns (AgentHealthResponse);
+}
+
+message StartCrawlJobRequest {
+  string user_id = 1;
+  repeated string urls = 2;
+  CrawlerConfiguration config = 3;
+  Priority priority = 4;
+  optional string assignment_id = 5;
+}
+
+message CrawlerConfiguration {
+  CrawlerType crawler_type = 1;
+  int32 timeout_seconds = 2;
+  bool follow_redirects = 3;
+  bool extract_images = 4;
+  bool extract_links = 5;
+  string custom_config_json = 6;
+}
+
+message CrawlJobResponse {
+  string job_id = 1;
+  JobStatus status = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp estimated_completion = 4;
+}
+
+message GetJobStatusRequest {
+  string job_id = 1;
+  string user_id = 2;
+}
+
+message CrawlJobStatusResponse {
+  string job_id = 1;
+  JobStatus status = 2;
+  int32 urls_processed = 3;
+  int32 urls_successful = 4;
+  int32 urls_failed = 5;
+  google.protobuf.Timestamp started_at = 6;
+  google.protobuf.Timestamp completed_at = 7;
+  optional string error_message = 8;
+  repeated CrawlResultSummary results = 9;
+}
+
+message CrawlResultSummary {
+  string url = 1;
+  int32 status_code = 2;
+  string content_type = 3;
+  int64 content_size = 4;
+}
+
+message ValidateUrlsRequest {
+  repeated string urls = 1;
+  string user_id = 2;
+  SubscriptionTier user_tier = 3;
+}
+
+message ValidateUrlsResponse {
+  repeated UrlValidationResult validation_results = 1;
+}
+
+message UrlValidationResult {
+  string url = 1;
+  bool is_valid = 2;
+  optional string validation_error = 3;
+  bool is_allowed_domain = 4;
+  optional string domain_restriction_reason = 5;
+}
+
+message CancelJobRequest {
+  string job_id = 1;
+  string user_id = 2;
+}
+
+message CancelJobResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListJobsRequest {
+  string user_id = 1;
+  optional JobStatus status_filter = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message ListJobsResponse {
+  repeated CrawlJobSummary jobs = 1;
+  int32 total_count = 2;
+}
+
+message CrawlJobSummary {
+  string job_id = 1;
+  JobStatus status = 2;
+  int32 url_count = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp completed_at = 5;
+}
+
+message CheckDomainPolicyRequest {
+  string domain = 1;
+  SubscriptionTier user_tier = 2;
+}
+
+message DomainPolicyResponse {
+  bool is_allowed = 1;
+  string policy_type = 2;
+  optional string restriction_reason = 3;
+}
+
+message ListAgentsRequest {
+  optional CrawlerType type_filter = 1;
+}
+
+message ListAgentsResponse {
+  repeated CrawlerAgentInfo agents = 1;
+}
+
+message CrawlerAgentInfo {
+  string agent_id = 1;
+  string name = 2;
+  CrawlerType type = 3;
+  AgentStatus status = 4;
+  int32 current_job_count = 5;
+  int32 max_concurrent_jobs = 6;
+}
+
+message GetAgentHealthRequest {
+  string agent_id = 1;
+}
+
+message AgentHealthResponse {
+  string agent_id = 1;
+  AgentStatus status = 2;
+  google.protobuf.Timestamp last_health_check = 3;
+  int32 total_jobs_processed = 4;
+  double average_processing_time = 5;
+}
+
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_PENDING = 1;
+  JOB_STATUS_RUNNING = 2;
+  JOB_STATUS_COMPLETED = 3;
+  JOB_STATUS_FAILED = 4;
+  JOB_STATUS_CANCELLED = 5;
+}
+
+enum CrawlerType {
+  CRAWLER_TYPE_UNSPECIFIED = 0;
+  CRAWLER_TYPE_HTTP_CLIENT = 1;
+  CRAWLER_TYPE_SELENIUM = 2;
+  CRAWLER_TYPE_PLAYWRIGHT = 3;
+  CRAWLER_TYPE_SCRAPY = 4;
+}
+
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_LOW = 1;
+  PRIORITY_NORMAL = 2;
+  PRIORITY_HIGH = 3;
+  PRIORITY_CRITICAL = 4;
+}
+
+enum SubscriptionTier {
+  SUBSCRIPTION_TIER_UNSPECIFIED = 0;
+  SUBSCRIPTION_TIER_FREE = 1;
+  SUBSCRIPTION_TIER_BASIC = 2;
+  SUBSCRIPTION_TIER_PRO = 3;
+  SUBSCRIPTION_TIER_ENTERPRISE = 4;
+}
+
+enum AgentStatus {
+  AGENT_STATUS_UNSPECIFIED = 0;
+  AGENT_STATUS_AVAILABLE = 1;
+  AGENT_STATUS_BUSY = 2;
+  AGENT_STATUS_OFFLINE = 3;
+  AGENT_STATUS_MAINTENANCE = 4;
+}

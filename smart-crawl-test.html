@@ -1,0 +1,3056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 Smart Crawl Test - Real Backend Integration</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .user-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 16px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #4caf50;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Login Section */
+        .login-section {
+            padding: 40px;
+            text-align: center;
+            display: none;
+        }
+
+        .login-section.active {
+            display: block;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .quick-login-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .quick-login-btn {
+            padding: 12px 24px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-login-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Assignment Selector */
+        .assignment-bar {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .assignment-bar label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .assignment-bar select {
+            padding: 8px 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            min-width: 400px;
+        }
+
+        .assignment-details {
+            margin-left: auto;
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            gap: 15px;
+        }
+
+        .assignment-details.ready {
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.agent {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.agent .message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.crawl-request .message-bubble {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .message.crawl-result .message-bubble {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .message.summary .message-bubble {
+            background: white;
+            border: 2px solid #4facfe;
+            color: #1a1a1a;
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.15);
+        }
+
+        .summary-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .summary-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .summary-highlight {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #f8fbff;
+            border: 1px solid #dbeafe;
+            font-size: 13px;
+            color: #1e3a8a;
+        }
+
+        .summary-body {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1f2937;
+            white-space: pre-wrap;
+        }
+
+        .summary-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .summary-loader {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #2563eb;
+        }
+
+        .summary-loader .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2563eb;
+            animation: pulse 1s infinite;
+        }
+
+        .message-meta {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .message-icon {
+            margin-right: 6px;
+        }
+
+        /* Chat Input */
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .crawl-form {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .crawl-form.active {
+            border-color: #667eea;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-input::placeholder {
+            color: #999;
+        }
+
+        .crawl-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .crawl-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .crawl-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .input-group button:hover {
+            transform: translateY(-2px);
+        }
+
+        .input-group button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+            padding-left: 16px;
+        }
+
+        /* Results Section */
+        .results-section {
+            width: 600px;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results-header {
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .results-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            padding: 6px 12px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .results-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .result-card h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .result-card .summary-text {
+            line-height: 1.6;
+            color: #666;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* Job List */
+        .job-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .job-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .job-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .job-status.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .job-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .job-status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .job-meta {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .job-progress {
+            margin-top: 8px;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .job-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .status-badge.crawling {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .quick-actions button {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quick-actions button:hover {
+            background: #e0e0e0;
+        }
+
+        .quick-actions button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Scrollbar Styling */
+        .chat-messages::-webkit-scrollbar,
+        .results-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb,
+        .results-content::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover,
+        .results-content::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid #e0e0e0;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                🎓 Smart Crawl Test
+                <span style="font-size: 14px; font-weight: normal; opacity: 0.8;">Real Backend Integration</span>
+            </h1>
+            <div class="header-right">
+                <div class="user-info" id="userInfo">
+                    <span id="userDisplay">Not logged in</span>
+                    <button class="logout-btn" id="logoutBtn" style="display: none;" onclick="logout()">Logout</button>
+                </div>
+                <div class="connection-status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Not connected</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Section -->
+        <div class="login-section active" id="loginSection">
+            <div class="login-card">
+                <h2>🔐 Login to Continue</h2>
+                <p style="color: #666; margin-bottom: 20px;">Choose a test account to login:</p>
+                <div class="quick-login-buttons">
+                    <button class="quick-login-btn" onclick="quickLogin('student')">
+                        👨‍🎓 Student Account
+                    </button>
+                    <button class="quick-login-btn" onclick="quickLogin('lecturer')">
+                        👨‍🏫 Lecturer Account
+                    </button>
+                    <button class="quick-login-btn" onclick="quickLogin('admin')">
+                        👨‍💼 Admin Account
+                    </button>
+                </div>
+                <div id="loginStatus" style="margin-top: 20px; color: #666; font-size: 14px;"></div>
+            </div>
+        </div>
+
+        <!-- Assignment Selector -->
+        <div class="assignment-bar" id="assignmentBar" style="display: none;">
+            <label>📚 Assignment:</label>
+            <select id="assignmentSelect" onchange="switchAssignment()">
+                <option value="">Select an assignment...</option>
+            </select>
+            <label style="margin-left: 20px;">💬 Conversation:</label>
+            <select id="conversationSelect" onchange="switchConversation()" style="min-width: 300px;" disabled>
+                <option value="">Select assignment first...</option>
+            </select>
+            <div class="assignment-details" id="assignmentDetails">
+                <span id="assignmentInfo">Select an assignment to begin</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent" style="display: none;">
+            <!-- Chat Section -->
+            <div class="chat-section">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Messages will appear here -->
+                </div>
+                <div class="chat-input">
+                    <!-- Smart Crawl Form -->
+                    <div class="crawl-form" id="crawlForm">
+                        <label class="form-label">🎯 URL to Crawl</label>
+                        <input
+                            type="url"
+                            id="crawlUrl"
+                            class="form-input"
+                            placeholder="https://example.com/page"
+                            disabled
+                        >
+                        <label class="form-label">💬 What to Extract (Prompt)</label>
+                        <input
+                            type="text"
+                            id="crawlPrompt"
+                            class="form-input"
+                            placeholder="Extract product names, prices, and descriptions"
+                            disabled
+                        >
+                        <button class="crawl-button" id="crawlButton" onclick="startCrawl()" disabled>
+                            🚀 Start Smart Crawl
+                        </button>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="input-group" style="position: relative;">
+                        <!-- CSV Upload Button - at top of message box -->
+                        <div id="csvUploadForm" style="margin-bottom: 10px;">
+                            <div style="display: flex; gap: 10px; align-items: center; background: #f0f7ff; padding: 10px; border-radius: 8px; border: 1px solid #b3d9ff;">
+                                <input
+                                    type="file"
+                                    id="csvFileInput"
+                                    accept=".csv"
+                                    style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: white; cursor: pointer;"
+                                    disabled
+                                >
+                                <button 
+                                    class="crawl-button" 
+                                    id="csvUploadButton" 
+                                    onclick="uploadCsvFile()" 
+                                    disabled
+                                    style="padding: 8px 20px; white-space: nowrap;"
+                                >
+                                    📄 Upload CSV
+                                </button>
+                            </div>
+                            <div id="csvUploadStatus" style="margin-top: 6px; font-size: 12px; color: #666; padding-left: 2px;"></div>
+                            <div id="csvUploadedInfo" style="margin-top: 6px; padding: 8px; background: #e7f3ff; border-radius: 4px; display: none; font-size: 12px;"></div>
+                        </div>
+                        <input
+                            type="text"
+                            id="messageInput"
+                            placeholder="Or type a message here..."
+                            onkeypress="handleKeyPress(event)"
+                            disabled
+                        >
+                        <button id="sendButton" onclick="sendMessage()" disabled>
+                            📤 Send
+                        </button>
+                    </div>
+                    <div class="input-hint">
+                        💡 Tip: Use the form above for structured crawling, or paste a URL in the message box for quick crawl
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section">
+                <div class="results-header">
+                    <span>📊 Live Results</span>
+                    <div class="results-tabs">
+                        <button class="tab-btn active" onclick="switchTab('results')">Results</button>
+                        <button class="tab-btn" onclick="switchTab('jobs')">Jobs</button>
+                    </div>
+                </div>
+                <div class="results-content" id="resultsContent">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                        </svg>
+                        <p>Results will appear here after crawling</p>
+                    </div>
+                </div>
+                <div class="results-content" id="jobsContent" style="display: none;">
+                    <div class="empty-state">
+                        <p>No crawl jobs yet</p>
+                    </div>
+                </div>
+                <div class="quick-actions">
+                    <button onclick="clearChat()">🗑️ Clear Chat</button>
+                    <button onclick="refreshAssignments()">🔄 Refresh</button>
+                    <button id="summaryActionButton" onclick="askAgentForSummary()" disabled>🧠 Ask Agent for Crawl Summary</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== Configuration ==========
+        const CONFIG = {
+            userServiceUrl: 'http://localhost:5001',
+            classroomServiceUrl: 'http://localhost:5006',
+            crawlerServiceUrl: 'http://localhost:5014',
+            chatHubUrl: 'http://localhost:5006/hubs/crawler-chat',
+            crawlerHubUrl: 'http://localhost:5014/hubs/crawl',
+
+            testCredentials: {
+                student: {
+                    email: 'kangmin@crawldata.com',
+                    password: 'Student@123456',
+                    role: 'Student'
+                },
+                lecturer: {
+                    email: 'luuka@crawldata.com',
+                    password: 'Lecturer@123456',
+                    role: 'Lecturer'
+                },
+                admin: {
+                    email: 'viethoang@crawldata.com',
+                    password: 'Admin@123456',
+                    role: 'Admin'
+                }
+            }
+        };
+
+        const SUMMARY_KEYWORDS = [
+            'summary',
+            'summaries',
+            'insights',
+            'overview',
+            'breakdown',
+            'highlights',
+            // Vietnamese keywords for summary/visualization triggers
+            'khoảng giá',
+            'bao nhiêu',
+            'thống kê',
+            'biểu đồ',
+            'tổng hợp',
+            'phân tích',
+            'xu hướng',
+            'giá cả',
+            'so sánh',
+            'dữ liệu'
+        ];
+
+        // ========== State ==========
+        let state = {
+            connection: null,  // ClassroomService chat connection
+            crawlerConnection: null,  // WebCrawlerService job monitoring
+            token: null,
+            userId: null,
+            userEmail: null,
+            userName: null,
+            userRole: null,
+            quotaUsed: 0,
+            quotaLimit: 0,
+            currentAssignment: null,
+            conversationId: null,
+            groupId: null,
+            assignmentId: null,
+            assignments: [],
+            messages: [],
+            jobs: {},
+            isConnected: false,
+            currentTab: 'results',
+            latestCrawlJobId: null,
+            lastSummary: null,
+            summaryLoading: false,
+            summaryError: null,
+            summaryRequestedVia: null,
+            isHydratingHistory: false
+        };
+
+        // ========== Summary Helpers ==========
+        function formatMultilineText(text = '') {
+            if (!text) return '';
+            return text
+                .replace(/\r\n/g, '\n')
+                .replace(/\t/g, '    ')
+                .trim();
+        }
+
+        function setSummaryLoading(isLoading, context = null) {
+            state.summaryLoading = isLoading;
+            state.summaryRequestedVia = context;
+            updateSummaryActionState();
+        }
+
+        function updateSummaryActionState() {
+            const btn = document.getElementById('summaryActionButton');
+            if (!btn) return;
+
+            if (state.summaryLoading) {
+                btn.disabled = true;
+                btn.textContent = '🧠 Loading summary...';
+                return;
+            }
+
+            const canRequestSummary = Boolean(state.conversationId && state.latestCrawlJobId);
+            btn.disabled = !canRequestSummary;
+            btn.textContent = '🧠 Ask Agent for Crawl Summary';
+        }
+
+        function rememberLatestJob(jobId) {
+            if (!jobId) return;
+            const normalized = typeof jobId === 'string' ? jobId : jobId.toString?.();
+            if (!normalized) return;
+            state.latestCrawlJobId = normalized;
+            updateSummaryActionState();
+        }
+
+        // ========== CSV Upload Functions ==========
+        function enableCsvUpload(enabled) {
+            const csvForm = document.getElementById('csvUploadForm');
+            const fileInput = document.getElementById('csvFileInput');
+            const uploadButton = document.getElementById('csvUploadButton');
+            
+            console.log(`📄 CSV Upload ${enabled ? 'ENABLED' : 'DISABLED'}`);
+            
+            if (csvForm) {
+                // Always show the form, but enable/disable the controls
+                csvForm.style.display = 'block';
+            }
+            
+            if (fileInput) {
+                // Update visual style first
+                if (enabled) {
+                    fileInput.style.cursor = 'pointer';
+                    fileInput.style.opacity = '1';
+                    fileInput.style.pointerEvents = 'auto';
+                    // Remove disabled attribute explicitly
+                    fileInput.removeAttribute('disabled');
+                    fileInput.disabled = false;
+                } else {
+                    fileInput.style.cursor = 'not-allowed';
+                    fileInput.style.opacity = '0.6';
+                    fileInput.style.pointerEvents = 'none';
+                    // Set disabled attribute
+                    fileInput.setAttribute('disabled', 'disabled');
+                    fileInput.disabled = true;
+                }
+            }
+            
+            if (uploadButton) {
+                uploadButton.disabled = !enabled;
+                // Also remove disabled attribute explicitly
+                if (enabled) {
+                    uploadButton.removeAttribute('disabled');
+                } else {
+                    uploadButton.setAttribute('disabled', 'disabled');
+                }
+            }
+            
+            if (!enabled) {
+                // Clear status when disabling
+                const statusEl = document.getElementById('csvUploadStatus');
+                const infoEl = document.getElementById('csvUploadedInfo');
+                if (statusEl) statusEl.textContent = '';
+                if (infoEl) {
+                    infoEl.style.display = 'none';
+                    infoEl.textContent = '';
+                }
+                if (fileInput) fileInput.value = '';
+            } else {
+                // Show hint when enabled
+                const statusEl = document.getElementById('csvUploadStatus');
+                if (statusEl) {
+                    statusEl.textContent = '💡 Select a CSV file to upload';
+                    statusEl.style.color = '#666';
+                }
+            }
+        }
+
+        async function uploadCsvFile() {
+            const fileInput = document.getElementById('csvFileInput');
+            const statusEl = document.getElementById('csvUploadStatus');
+            const infoEl = document.getElementById('csvUploadedInfo');
+            const uploadButton = document.getElementById('csvUploadButton');
+            
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                if (statusEl) {
+                    statusEl.textContent = '⚠️ Please select a CSV file first';
+                    statusEl.style.color = '#dc3545';
+                }
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                if (statusEl) {
+                    statusEl.textContent = '❌ Please select a CSV file (.csv)';
+                    statusEl.style.color = '#dc3545';
+                }
+                return;
+            }
+
+            if (!state.conversationId) {
+                if (statusEl) {
+                    statusEl.textContent = '⚠️ Please select a conversation first';
+                    statusEl.style.color = '#dc3545';
+                }
+                return;
+            }
+
+            try {
+                // Disable button during upload
+                if (uploadButton) uploadButton.disabled = true;
+                if (statusEl) {
+                    statusEl.textContent = '⏳ Uploading CSV file...';
+                    statusEl.style.color = '#666';
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(
+                    `${CONFIG.classroomServiceUrl}/api/chat/conversations/${state.conversationId}/upload-csv`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${state.token}`
+                        },
+                        body: formData
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || `Upload failed: ${response.status}`);
+                }
+
+                // Success
+                if (statusEl) {
+                    statusEl.textContent = '✅ CSV file uploaded successfully!';
+                    statusEl.style.color = '#28a745';
+                }
+
+                // Display file info
+                if (infoEl && result.fileName) {
+                    const columnNames = result.columnNames || [];
+                    infoEl.innerHTML = `
+                        <strong>📄 ${escapeHtml(result.fileName)}</strong><br>
+                        <span>📊 ${result.rowCount || 0} rows, ${columnNames.length} columns</span><br>
+                        <span style="font-size: 12px; color: #666;">Columns: ${escapeHtml(columnNames.slice(0, 5).join(', '))}${columnNames.length > 5 ? '...' : ''}</span>
+                    `;
+                    infoEl.style.display = 'block';
+                }
+
+                // Clear file input
+                if (fileInput) fileInput.value = '';
+
+                // Show success message in chat
+                addSystemMessage(`✅ CSV file "${file.name}" uploaded successfully (${result.rowCount || 0} rows)`);
+
+            } catch (error) {
+                console.error('❌ CSV upload error:', error);
+                if (statusEl) {
+                    statusEl.textContent = `❌ Upload failed: ${error.message}`;
+                    statusEl.style.color = '#dc3545';
+                }
+                addSystemMessage(`❌ Failed to upload CSV file: ${error.message}`);
+            } finally {
+                if (uploadButton) uploadButton.disabled = false;
+            }
+        }
+
+        function extractJobId(payload) {
+            if (!payload) return null;
+            const value = payload.jobId || payload.JobId || payload.crawlJobId || payload.CrawlJobId || null;
+            if (!value) return null;
+            return typeof value === 'string' ? value : value.toString?.();
+        }
+
+        // ========== Initialization ==========
+        window.onload = async () => {
+            console.log('🚀 Initializing Smart Crawl Test...');
+            updateSummaryActionState();
+            // Initialize CSV upload as disabled
+            enableCsvUpload(false);
+
+            // Try to restore session from localStorage
+            const savedToken = localStorage.getItem('authToken');
+            const savedUser = localStorage.getItem('userInfo');
+
+            if (savedToken && savedUser) {
+                try {
+                    state.token = savedToken;
+                    const userInfo = JSON.parse(savedUser);
+                    Object.assign(state, userInfo);
+
+                    console.log('📦 Restored session from localStorage');
+                    await onLoginSuccess();
+                } catch (error) {
+                    console.log('❌ Failed to restore session:', error);
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userInfo');
+                }
+            }
+        };
+
+        // ========== Authentication ==========
+        async function quickLogin(accountType) {
+            const credentials = CONFIG.testCredentials[accountType];
+            await login(credentials.email, credentials.password);
+        }
+
+        async function login(email, password) {
+            try {
+                setLoginStatus('Logging in...', 'info');
+
+                const response = await fetch(`${CONFIG.userServiceUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Login failed: ${response.status} - ${error}`);
+                }
+
+                const result = await response.json();
+                console.log('📥 Login response:', result);
+
+                // Handle different response formats (support PascalCase and camelCase)
+                const data = result.data || result;
+
+                if (!data.accessToken && !data.token && !data.AccessToken && !data.Token) {
+                    throw new Error('No access token in response');
+                }
+
+                // Store authentication data (handle both PascalCase and camelCase)
+                state.token = data.accessToken || data.token || data.AccessToken || data.Token;
+                state.userId = data.userId || data.UserId;
+                state.userEmail = data.email || data.Email;
+                state.userName = `${data.firstName || data.FirstName || ''} ${data.lastName || data.LastName || ''}`.trim() || data.email || data.Email;
+                state.userRole = data.role || data.Role;
+                state.quotaUsed = data.crawlQuotaUsed || data.CrawlQuotaUsed || 0;
+                state.quotaLimit = data.crawlQuotaLimit || data.CrawlQuotaLimit || 10;
+
+                // Save to localStorage
+                localStorage.setItem('authToken', state.token);
+                localStorage.setItem('userInfo', JSON.stringify({
+                    userId: state.userId,
+                    userEmail: state.userEmail,
+                    userName: state.userName,
+                    userRole: state.userRole,
+                    quotaUsed: state.quotaUsed,
+                    quotaLimit: state.quotaLimit
+                }));
+
+                setLoginStatus('✅ Login successful! Connecting...', 'success');
+                console.log('✅ Login successful:', state.userName);
+
+                await onLoginSuccess();
+            } catch (error) {
+                console.error('❌ Login failed:', error);
+                setLoginStatus(`❌ Login failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function onLoginSuccess() {
+            // Update UI
+            updateUserDisplay();
+
+            // Hide login section
+            document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('assignmentBar').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'flex';
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+
+            // Connect to SignalR
+            await connectToHub();
+
+            // Load assignments
+            await loadAssignments();
+        }
+
+        function logout() {
+            // Clear state
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userInfo');
+
+            // Disconnect SignalR
+            if (state.connection) {
+                state.connection.stop();
+            }
+
+            // Reload page
+            window.location.reload();
+        }
+
+        function updateUserDisplay() {
+            const display = `${state.userName} (${state.userRole}) • ${state.quotaUsed}/${state.quotaLimit} Crawls Used`;
+            document.getElementById('userDisplay').textContent = display;
+        }
+
+        function setLoginStatus(message, type) {
+            const statusEl = document.getElementById('loginStatus');
+            statusEl.textContent = message;
+            statusEl.style.color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#666';
+        }
+
+        // ========== SignalR Connection ==========
+        async function connectToHub() {
+            try {
+                updateStatus('Connecting to hubs...', false);
+
+                // Connect to ClassroomService for chat/conversations
+                state.connection = new signalR.HubConnectionBuilder()
+                    .withUrl(CONFIG.chatHubUrl, {
+                        accessTokenFactory: () => state.token
+                    })
+                    .withAutomaticReconnect()
+                    .build();
+
+                // Connect to WebCrawlerService for job monitoring
+                state.crawlerConnection = new signalR.HubConnectionBuilder()
+                    .withUrl(CONFIG.crawlerHubUrl, {
+                        accessTokenFactory: () => state.token
+                    })
+                    .withAutomaticReconnect()
+                    .build();
+
+                // Setup event handlers for both connections
+                setupChatHubHandlers();
+                setupCrawlerHubHandlers();
+
+                // Start both connections
+                await Promise.all([
+                    state.connection.start(),
+                    state.crawlerConnection.start()
+                ]);
+
+                state.isConnected = true;
+                updateStatus(`Connected`, true);
+                console.log('✅ Connected to both hubs');
+
+                addSystemMessage(`✅ Connected successfully! Select an assignment to begin.`);
+            } catch (error) {
+                console.error('❌ Hub connection failed:', error);
+                updateStatus('Connection failed', false);
+                addSystemMessage(`❌ Failed to connect: ${error.message}`);
+            }
+        }
+
+        function setupChatHubHandlers() {
+            const conn = state.connection;
+
+            // Conversation events
+            conn.on('ConversationJoined', (conversationId) => {
+                console.log('✅ Joined conversation:', conversationId);
+            });
+
+            // Assignment events
+            conn.on('AssignmentSubscribed', (assignmentId) => {
+                console.log('✅ Subscribed to assignment:', assignmentId);
+            });
+
+            // Message events
+            conn.on('UserMessageReceived', (message) => {
+                console.log('📨 Message received:', message);
+                displayMessage(message);
+            });
+
+            conn.on('GroupMessageReceived', (message) => {
+                console.log('👥 Group message received:', message);
+                displayMessage(message);
+            });
+
+            conn.on('MessageSent', (data) => {
+                console.log('✅ Message sent confirmation:', data);
+            });
+
+            // Crawl events
+            conn.on('CrawlInitiated', async (data) => {
+                console.log('🚀 Crawl initiated:', data);
+                // data = { messageId, crawlJobId, message, success, status }
+                if (data.crawlJobId) {
+                    addSystemMessage(`🚀 Crawl started! Job ID: ${data.crawlJobId.substring(0, 8)}...`);
+                    
+                    // Subscribe to job on WebCrawlerService connection
+                    try {
+                        await state.crawlerConnection.invoke('SubscribeToJob', data.crawlJobId.toString());
+                        console.log(`✅ Subscribed to job: ${data.crawlJobId}`);
+                    } catch (error) {
+                        console.error('⚠️ Failed to subscribe to job:', error);
+                    }
+                    
+                    // Add job to tracking list with status from event or default to 'running'
+                    const status = data.status || 'running';
+                    addJobToList(data.crawlJobId, 'Crawling...', status);
+                } else {
+                    addSystemMessage(`⚠️ Crawl initiated but no job ID`);
+                }
+            });
+
+            conn.on('CrawlJobStatus', (data) => {
+                console.log('📊 Crawl status update:', data);
+                // Handle both 'progress' and 'progressPercentage' from C# backend
+                const progress = data.progress || data.progressPercentage || data.ProgressPercentage || 0;
+                const jobId = extractJobId(data);
+                if (jobId) {
+                    updateJobStatus(jobId, data.status, progress);
+                    if (typeof data.status === 'string' && data.status.toLowerCase() === 'completed') {
+                        rememberLatestJob(jobId);
+                    }
+                }
+            });
+
+            conn.on('CrawlJobProgressUpdate', (data) => {
+                console.log('📈 Progress update:', data);
+                // Handle both 'progress' and 'progressPercentage' from C# backend
+                const progress = data.progress || data.progressPercentage || data.ProgressPercentage || 0;
+                const jobId = extractJobId(data);
+                if (jobId) {
+                    updateJobProgress(jobId, progress, data.message);
+                }
+            });
+
+            conn.on('CrawlResultReady', async (data) => {
+                console.log('✅ Crawl result ready:', data);
+                addSystemMessage(`✅ Crawl completed! Processing results...`);
+                rememberLatestJob(extractJobId(data));
+
+                // Fetch full results from API
+                // data.jobId is the crawl job ID, data.messageId is the chat message ID
+                await fetchAndDisplayResults(data.messageId, data.jobId);
+            });
+
+            conn.on('CrawlerDetailedEvent', (data) => {
+                console.log('🔍 Detailed crawler event:', data);
+                
+                // Map event types to friendly messages and icons
+                const eventIcons = {
+                    'NavigationPlanningCompleted': '🗺️',
+                    'NavigationExecutionStarted': '🚀',
+                    'NavigationStepCompleted': '✅',
+                    'PaginationPageLoaded': '📄',
+                    'DataExtractionStarted': '🔍',
+                    'DataExtractionCompleted': '✨'
+                };
+                
+                const icon = eventIcons[data.eventType] || '📌';
+                let message = `${icon} ${data.eventType}`;
+                
+                if (data.stepNumber && data.totalSteps) {
+                    message += ` (Step ${data.stepNumber}/${data.totalSteps})`;
+                }
+                if (data.pageNumber) {
+                    message += ` - Page ${data.pageNumber}`;
+                }
+                if (data.message) {
+                    message += `: ${data.message}`;
+                }
+                
+                addSystemMessage(message);
+            });
+
+            conn.on('CrawlFailed', (data) => {
+                console.error('❌ Crawl failed:', data);
+                addSystemMessage(`❌ Crawl failed: ${data.error}`);
+                updateJobStatus(data.jobId, 'failed', 0);
+            });
+
+            // Connection events
+            conn.onreconnecting(() => {
+                updateStatus('Reconnecting...', false);
+            });
+
+            conn.onreconnected(() => {
+                updateStatus('Connected', true);
+                addSystemMessage('✅ Reconnected to hub');
+            });
+
+            conn.onclose(() => {
+                state.isConnected = false;
+                updateStatus('Disconnected', false);
+            });
+        }
+
+        function setupCrawlerHubHandlers() {
+            const conn = state.crawlerConnection;
+
+            // Job completion event from WebCrawlerService
+            conn.on('OnJobCompleted', (data) => {
+                console.log('🎉 Job completed:', data);
+                const jobId = extractJobId(data);
+                
+                // Ensure job exists before updating
+                if (jobId && !state.jobs[jobId]) {
+                    console.log('📝 Creating job entry for completed job:', jobId);
+                    addJobToList(jobId, data.url || 'Crawl job', 'completed');
+                }
+                
+                if (jobId) {
+                    updateJobStatus(jobId, 'completed', 100);
+                    rememberLatestJob(jobId);
+                    fetchCrawlResults(jobId);
+                }
+            });
+
+            // Job started event
+            conn.on('OnJobStarted', (data) => {
+                console.log('🚀 Job started:', data);
+                const jobId = extractJobId(data);
+                
+                if (jobId) {
+                    // Ensure job exists before updating
+                    if (!state.jobs[jobId]) {
+                        console.log('📝 Creating job entry for started job:', jobId);
+                        addJobToList(jobId, data.url || 'Crawl job', 'running');
+                    }
+                    
+                    updateJobStatus(jobId, 'running', 0);
+                }
+            });
+
+            // Job progress updates
+            conn.on('OnJobProgress', (data) => {
+                console.log('📊 Job progress:', data);
+                const jobId = extractJobId(data);
+                
+                // Ensure job exists before updating
+                if (jobId && !state.jobs[jobId]) {
+                    console.log('📝 Creating job entry for progress update:', jobId);
+                    addJobToList(jobId, data.url || 'Crawl job', 'running');
+                }
+                
+                if (jobId) {
+                    const progress = data.progressPercentage || data.progress || 0;
+                    updateJobStatus(jobId, 'running', progress);
+                }
+            });
+
+            // Navigation events (planning, execution, steps)
+            conn.on('OnJobNavigation', (data) => {
+                console.log('🗺️ Navigation event:', data);
+                
+                // Ensure job exists
+                if (!state.jobs[data.jobId]) {
+                    addJobToList(data.jobId, data.currentUrl || 'Crawl job', 'running');
+                }
+                
+                // Update job with navigation details
+                if (state.jobs[data.jobId]) {
+                    state.jobs[data.jobId].navigationEvent = data.navigationEventType;
+                    state.jobs[data.jobId].currentStep = data.stepNumber;
+                    state.jobs[data.jobId].totalSteps = data.totalSteps;
+                    state.jobs[data.jobId].navigationAction = data.action;
+                    updateJobsDisplay();
+                }
+                
+                // Show system message for key navigation events
+                const eventIcons = {
+                    'NavigationPlanningStarted': '🗺️',
+                    'NavigationPlanningCompleted': '✅',
+                    'NavigationExecutionStarted': '🚀',
+                    'NavigationStepCompleted': '✓'
+                };
+                const icon = eventIcons[data.navigationEventType] || '📍';
+                let message = `${icon} ${data.navigationEventType}`;
+                if (data.stepNumber && data.totalSteps) {
+                    message += ` (Step ${data.stepNumber}/${data.totalSteps})`;
+                }
+                if (data.description) {
+                    message += `: ${data.description}`;
+                }
+                addSystemMessage(message);
+            });
+
+            // Pagination events
+            conn.on('OnJobPagination', (data) => {
+                console.log('📄 Pagination event:', data);
+                
+                // Ensure job exists
+                if (!state.jobs[data.jobId]) {
+                    addJobToList(data.jobId, data.pageUrl || 'Crawl job', 'running');
+                }
+                
+                // Update job with pagination details
+                if (state.jobs[data.jobId]) {
+                    state.jobs[data.jobId].currentPage = data.pageNumber;
+                    state.jobs[data.jobId].totalPages = data.totalPagesCollected;
+                    state.jobs[data.jobId].maxPages = data.maxPages;
+                    updateJobsDisplay();
+                }
+                
+                addSystemMessage(`📄 Loaded page ${data.pageNumber}${data.maxPages ? `/${data.maxPages}` : ''} (${data.totalPagesCollected} total)`);
+            });
+
+            // Extraction events
+            conn.on('OnJobExtraction', (data) => {
+                console.log('🔍 Extraction event:', data);
+                
+                // Ensure job exists
+                if (!state.jobs[data.jobId]) {
+                    addJobToList(data.jobId, 'Crawl job', 'running');
+                }
+                
+                // Update job with extraction details
+                if (state.jobs[data.jobId]) {
+                    state.jobs[data.jobId].extractionEvent = data.extractionEventType;
+                    state.jobs[data.jobId].itemsExtracted = data.totalItemsExtracted;
+                    state.jobs[data.jobId].pagesProcessed = data.pagesProcessed;
+                    updateJobsDisplay();
+                }
+                
+                const icon = data.extractionEventType === 'DataExtractionStarted' ? '🔍' : '✨';
+                let message = `${icon} ${data.extractionEventType}`;
+                if (data.totalItemsExtracted) {
+                    message += `: ${data.totalItemsExtracted} items from ${data.pagesProcessed} pages`;
+                }
+                addSystemMessage(message);
+            });
+
+            // Connection events
+            conn.onreconnecting(() => {
+                console.log('🔄 Crawler hub reconnecting...');
+            });
+
+            conn.onreconnected(() => {
+                console.log('✅ Crawler hub reconnected');
+            });
+
+            conn.onclose(() => {
+                console.log('❌ Crawler hub disconnected');
+            });
+        }
+
+        // ========== Assignment Management ==========
+        async function loadAssignments() {
+            try {
+                addSystemMessage('📚 Loading your assignments...');
+
+                const response = await fetch(`${CONFIG.classroomServiceUrl}/api/Assignments/my-assignments`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load assignments: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('📥 Assignments loaded:', result);
+
+                // Check PascalCase first (C# API convention), then camelCase for backward compatibility
+                const assignments = result.Assignments || result.assignments || result.data || [];
+                state.assignments = assignments;
+
+                // Populate dropdown
+                const select = document.getElementById('assignmentSelect');
+                select.innerHTML = '<option value="">Select an assignment...</option>';
+
+                if (assignments.length === 0) {
+                    addSystemMessage('ℹ️ No assignments found. You can still test crawling!');
+
+                    // Add a demo assignment for testing
+                    select.innerHTML += `<option value="demo">🧪 Demo Assignment (Testing)</option>`;
+                } else {
+                    assignments.forEach(assignment => {
+                        const dueInfo = assignment.daysUntilDue !== undefined
+                            ? ` - Due in ${assignment.daysUntilDue} days`
+                            : '';
+                        select.innerHTML += `
+                            <option value="${assignment.id}">
+                                ${assignment.courseName || 'Course'}: ${assignment.title}${dueInfo}
+                            </option>
+                        `;
+                    });
+                    addSystemMessage(`✅ Loaded ${assignments.length} assignment(s)`);
+                }
+            } catch (error) {
+                console.error('❌ Failed to load assignments:', error);
+                addSystemMessage(`❌ Failed to load assignments: ${error.message}`);
+
+                // Add demo assignment as fallback
+                const select = document.getElementById('assignmentSelect');
+                select.innerHTML += `<option value="demo">🧪 Demo Assignment (Testing)</option>`;
+            }
+        }
+
+        /**
+         * Fetch the student's group for a specific assignment
+         * Returns {groupId, groupName} if student is assigned to a group for this assignment, null otherwise
+         */
+        async function fetchStudentGroupForAssignment(assignmentId, courseId) {
+            try {
+                console.log(`🔍 Fetching student's group for assignment ${assignmentId} in course ${courseId}`);
+
+                const response = await fetch(`${CONFIG.classroomServiceUrl}/api/groups/my-groups?courseId=${courseId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    console.warn('⚠️ Could not fetch student groups:', response.status);
+                    return null;
+                }
+
+                const result = await response.json();
+                const groups = result.groups || [];
+                
+                // Find group assigned to this specific assignment
+                const assignedGroup = groups.find(g => g.assignmentId === assignmentId);
+                
+                if (assignedGroup) {
+                    console.log(`✅ Found assigned group: ${assignedGroup.groupName} (${assignedGroup.groupId})`);
+                    return {
+                        groupId: assignedGroup.groupId,
+                        groupName: assignedGroup.groupName
+                    };
+                }
+                
+                console.log('ℹ️ Student is not assigned to any group for this assignment');
+                return null;
+            } catch (error) {
+                console.error('❌ Error fetching student group:', error);
+                return null;
+            }
+        }
+
+        async function switchAssignment() {
+            const select = document.getElementById('assignmentSelect');
+            const assignmentId = select.value;
+
+            if (!assignmentId) {
+                // Reset conversation dropdown
+                const conversationSelect = document.getElementById('conversationSelect');
+                conversationSelect.innerHTML = '<option value="">Select assignment first...</option>';
+                conversationSelect.disabled = true;
+                
+                // Disable CSV upload
+                enableCsvUpload(false);
+                
+                return;
+            }
+
+            state.latestCrawlJobId = null;
+            state.lastSummary = null;
+            updateSummaryActionState();
+
+            if (assignmentId === 'demo') {
+                // Demo assignment
+                state.currentAssignment = {
+                    id: 'demo',
+                    title: 'Demo Assignment',
+                    description: 'Test crawling functionality'
+                };
+                state.assignmentId = 'demo';
+                state.conversationId = generateGuid();
+                state.groupId = null;  // Don't use fake groupId - it must exist in database
+
+                // Enable conversation dropdown with "New Conversation" option
+                const conversationSelect = document.getElementById('conversationSelect');
+                conversationSelect.innerHTML = '<option value="_new">➕ Start New Conversation</option>';
+                conversationSelect.disabled = false;
+                conversationSelect.value = '_new';
+
+                await joinAssignmentContexts();
+                return;
+            }
+
+            // Load real assignment details
+            try {
+                const assignment = state.assignments.find(a => a.id === assignmentId);
+                if (!assignment) {
+                    throw new Error('Assignment not found');
+                }
+
+                // Clear chat before loading new assignment
+                clearChat();
+
+                addSystemMessage(`📖 Loading assignment: ${assignment.title}...`);
+
+                // Fetch detailed assignment info
+                const response = await fetch(`${CONFIG.classroomServiceUrl}/api/Assignments/${assignmentId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load assignment details: ${response.status}`);
+                }
+
+                const details = await response.json();
+                console.log('📥 Assignment details:', details);
+
+                state.currentAssignment = details.data || details;
+                state.assignmentId = assignmentId;
+                
+                // Show/hide assignment context checkbox based on whether assignment is selected
+                const assignmentContextOption = document.getElementById('assignmentContextOption');
+                if (assignmentContextOption) {
+                    assignmentContextOption.style.display = assignmentId && assignmentId !== 'demo' ? 'block' : 'none';
+                }
+                
+                // Determine groupId based on assignment type
+                const isGroupAssignment = state.currentAssignment.isGroupAssignment;
+                let assignmentTypeMessage = '';
+                let canCrawl = true;
+                
+                if (!isGroupAssignment) {
+                    // Individual assignment - no group needed
+                    state.groupId = null;
+                    assignmentTypeMessage = '📝 Individual Assignment - Working independently';
+                    console.log('ℹ️ Individual assignment detected, groupId set to null');
+                } else {
+                    // Group assignment - fetch student's assigned group
+                    const groupInfo = await fetchStudentGroupForAssignment(
+                        assignmentId, 
+                        state.currentAssignment.courseId
+                    );
+                    
+                    if (groupInfo) {
+                        state.groupId = groupInfo.groupId;
+                        assignmentTypeMessage = `👥 Group Assignment - Group: ${groupInfo.groupName}`;
+                        console.log(`✅ Group assignment with assigned group: ${groupInfo.groupName}`);
+                    } else {
+                        state.groupId = null;
+                        assignmentTypeMessage = '⚠️ Group Assignment - You are not assigned to a group yet. Please contact your lecturer.';
+                        canCrawl = false;
+                        console.warn('⚠️ Group assignment but student has no assigned group');
+                    }
+                }
+                
+                // Display assignment type message
+                addSystemMessage(assignmentTypeMessage);
+                
+                // Enable/disable chat input based on group assignment status
+                const chatInput = document.getElementById('chatInput');
+                const sendButton = document.querySelector('button[onclick="sendMessage()"]');
+                
+                if (chatInput) {
+                    if (!canCrawl) {
+                        chatInput.disabled = true;
+                        chatInput.placeholder = '⚠️ Cannot crawl - not assigned to a group';
+                    } else {
+                        chatInput.disabled = false;
+                        chatInput.placeholder = 'Type a message or paste a URL to crawl...';
+                    }
+                }
+                
+                if (sendButton) {
+                    sendButton.disabled = !canCrawl;
+                }
+
+                // Load available conversations for this assignment
+                await loadConversations(assignmentId);
+
+            } catch (error) {
+                console.error('❌ Failed to load assignment:', error);
+                addSystemMessage(`❌ Failed to load assignment: ${error.message}`);
+            }
+        }
+
+        async function loadConversations(assignmentId) {
+            try {
+                addSystemMessage('💬 Loading conversations...');
+
+                const response = await fetch(
+                    `${CONFIG.classroomServiceUrl}/api/crawler-chat/assignment/${assignmentId}/conversations`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${state.token}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    console.warn('⚠️ Could not load conversations:', response.status);
+                    // Default to new conversation
+                    const conversationSelect = document.getElementById('conversationSelect');
+                    conversationSelect.innerHTML = '<option value="_new">➕ Start New Conversation</option>';
+                    conversationSelect.disabled = false;
+                    conversationSelect.value = '_new';
+
+                    // Auto-start new conversation
+                    state.conversationId = generateGuid();
+                    await joinAssignmentContexts();
+                    return;
+                }
+
+                const conversations = await response.json();
+                console.log(`💬 Loaded ${conversations.length} conversations`);
+
+                const conversationSelect = document.getElementById('conversationSelect');
+                conversationSelect.innerHTML = '<option value="_new">➕ Start New Conversation</option>';
+
+                if (conversations.length > 0) {
+                    conversations.forEach((conv, index) => {
+                        const messageCount = conv.messageCount || 0;
+                        const lastMessage = conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleDateString() : 'No messages';
+                        const displayName = conv.conversationName || `Conversation ${index + 1}`;
+                        conversationSelect.innerHTML += `
+                            <option value="${conv.conversationId}">
+                                ${displayName} (${messageCount} messages, ${lastMessage})
+                            </option>
+                        `;
+                    });
+                    addSystemMessage(`✅ Found ${conversations.length} previous conversation(s)`);
+                } else {
+                    addSystemMessage('💬 No previous conversations. Starting a new one!');
+                }
+
+                conversationSelect.disabled = false;
+
+                // Auto-select first conversation or new one
+                if (conversations.length > 0) {
+                    conversationSelect.selectedIndex = 1; // Select first conversation
+                    await switchConversation();
+                } else {
+                    conversationSelect.value = '_new';
+                    state.conversationId = generateGuid();
+                    // Disable CSV upload for new conversations
+                    enableCsvUpload(false);
+                    await joinAssignmentContexts();
+                }
+
+            } catch (error) {
+                console.error('❌ Error loading conversations:', error);
+                addSystemMessage('⚠️ Could not load conversations, starting new one');
+
+                // Default to new conversation
+                const conversationSelect = document.getElementById('conversationSelect');
+                conversationSelect.innerHTML = '<option value="_new">➕ Start New Conversation</option>';
+                conversationSelect.disabled = false;
+                conversationSelect.value = '_new';
+                state.conversationId = generateGuid();
+                // Disable CSV upload for new conversations
+                enableCsvUpload(false);
+                await joinAssignmentContexts();
+            }
+        }
+
+        async function switchConversation() {
+            const select = document.getElementById('conversationSelect');
+            const conversationId = select.value;
+
+            if (!conversationId) return;
+
+            if (conversationId === '_new') {
+                // Start new conversation
+                clearChat();
+                state.conversationId = generateGuid();
+                addSystemMessage('✨ Starting new conversation...');
+                state.latestCrawlJobId = null;
+                state.lastSummary = null;
+                updateSummaryActionState();
+                
+                // Disable CSV upload for new conversations (need to save first)
+                enableCsvUpload(false);
+                
+                await joinAssignmentContexts();
+                return;
+            }
+
+            // Load existing conversation
+            try {
+                clearChat();
+                state.conversationId = conversationId;
+                addSystemMessage(`📜 Loading conversation: ${conversationId.substring(0, 8)}...`);
+                state.latestCrawlJobId = null;
+                state.lastSummary = null;
+                updateSummaryActionState();
+                
+                // Enable CSV upload
+                enableCsvUpload(true);
+
+                // Load conversation messages
+                await loadConversationMessages(conversationId);
+                await joinAssignmentContexts();
+
+            } catch (error) {
+                console.error('❌ Failed to switch conversation:', error);
+                addSystemMessage(`❌ Failed to load conversation: ${error.message}`);
+            }
+        }
+
+        async function loadConversationMessages(conversationId) {
+            state.isHydratingHistory = true;
+            try {
+                const response = await fetch(
+                    `${CONFIG.classroomServiceUrl}/api/crawler-chat/conversation/${conversationId}/messages?limit=100`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${state.token}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    console.warn('⚠️ Could not load conversation messages:', response.status);
+                    addSystemMessage('⚠️ Could not load messages');
+                    return;
+                }
+
+                const messages = await response.json();
+                console.log(`📜 Loaded ${messages.length} messages`);
+
+                if (messages.length === 0) {
+                    addSystemMessage('💬 No messages in this conversation yet');
+                    return;
+                }
+
+                let latestJobId = null;
+
+                // Display all messages
+                messages.forEach(msg => {
+                    const displayMsg = {
+                        messageId: msg.messageId,
+                        conversationId: msg.conversationId,
+                        userId: msg.userId,
+                        userName: msg.userName,
+                        content: msg.content,
+                        messageType: msg.messageType,
+                        crawlJobId: msg.crawlJobId,
+                        sentAt: new Date(msg.timestamp),
+                        extractedData: msg.extractedData,
+                        visualizationData: msg.visualizationData
+                    };
+                    displayMessage(displayMsg, false);
+
+                    if (msg.crawlJobId) {
+                        latestJobId = msg.crawlJobId;
+                    }
+                });
+
+                rememberLatestJob(latestJobId);
+                addSystemMessage(`✅ Loaded ${messages.length} messages`);
+            } catch (error) {
+                console.error('❌ Error loading messages:', error);
+                addSystemMessage('⚠️ Error loading messages');
+            } finally {
+                state.isHydratingHistory = false;
+            }
+        }
+
+
+        async function joinAssignmentContexts() {
+            try {
+                // Join SignalR groups (convert GUIDs to strings for C# SignalR hub)
+                await state.connection.invoke('JoinConversation', state.conversationId.toString());
+
+                if (state.groupId && state.groupId !== 'demo') {
+                    await state.connection.invoke('JoinGroupWorkspace', state.groupId.toString());
+                }
+
+                await state.connection.invoke('SubscribeToAssignment', state.assignmentId.toString());
+
+                document.getElementById('assignmentInfo').textContent = '✅ Ready to crawl';
+                document.getElementById('assignmentDetails').classList.add('ready');
+
+                // Enable chat input
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendButton').disabled = false;
+                document.getElementById('crawlUrl').disabled = false;
+                document.getElementById('crawlPrompt').disabled = false;
+                document.getElementById('crawlButton').disabled = false;
+
+                addSystemMessage(`📚 Assignment: ${state.currentAssignment.title}`);
+                if (state.currentAssignment.description) {
+                    addSystemMessage(`ℹ️ ${state.currentAssignment.description}`);
+                }
+                addSystemMessage(`💡 Paste a URL to start crawling, or ask questions about data!`);
+                    updateSummaryActionState();
+            } catch (error) {
+                console.error('❌ Failed to join assignment:', error);
+                addSystemMessage(`❌ Failed to join assignment: ${error.message}`);
+            }
+        }
+
+        async function refreshAssignments() {
+            await loadAssignments();
+        }
+
+        // ========== Message Handling ==========
+        async function startCrawl() {
+            const urlInput = document.getElementById('crawlUrl');
+            const promptInput = document.getElementById('crawlPrompt');
+            
+            const url = urlInput.value.trim();
+            const prompt = promptInput.value.trim();
+
+            if (!url) {
+                alert('Please enter a URL to crawl');
+                return;
+            }
+
+            if (!prompt) {
+                alert('Please enter a prompt describing what to extract');
+                return;
+            }
+
+            // Validate URL format
+            try {
+                new URL(url);
+            } catch (e) {
+                alert('Please enter a valid URL (e.g., https://example.com)');
+                return;
+            }
+
+            // Disable button during crawl
+            const button = document.getElementById('crawlButton');
+            button.disabled = true;
+            button.textContent = '🔄 Crawling...';
+
+            try {
+                await createCrawlJob(url, prompt);
+                
+                // Clear inputs after successful submission
+                urlInput.value = '';
+                promptInput.value = '';
+            } finally {
+                // Re-enable button
+                button.disabled = false;
+                button.textContent = '🚀 Start Smart Crawl';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+
+            if (!content || !state.isConnected || !state.conversationId) return;
+
+            // Detect if message contains URL
+            const urlRegex = /(https?:\/\/[^\s]+)/;
+            const hasUrl = urlRegex.test(content);
+
+            if (hasUrl) {
+                // Extract URL
+                const url = content.match(urlRegex)[0];
+
+                // Determine prompt: if content is ONLY the URL, use a default extraction prompt
+                let prompt = content;
+                if (content === url) {
+                    // User pasted just a URL, provide a default extraction instruction
+                    prompt = "Extract all structured data from this page including text, links, headings, and any product or content information";
+                }
+
+                // Create crawl job via API
+                await createCrawlJob(url, prompt);
+
+                // Clear input
+                input.value = '';
+            } else {
+                // Regular message
+                const normalizedContent = content.toLowerCase();
+                const shouldMarkFollowUp = SUMMARY_KEYWORDS.some(keyword => normalizedContent.includes(keyword));
+                
+                console.log(`📝 Message analysis: "${normalizedContent}" contains keyword? ${shouldMarkFollowUp}`);
+
+                const message = {
+                    messageId: generateGuid(),
+                    userId: state.userId,
+                    userName: state.userName,
+                    content: content,
+                    messageType: shouldMarkFollowUp ? 6 : 0, // FollowUpQuestion or UserMessage
+                    conversationId: state.conversationId,
+                    groupId: state.groupId,
+                    assignmentId: state.assignmentId,
+                    sentAt: new Date().toISOString()
+                };
+
+                try {
+                    await state.connection.invoke('SendCrawlerMessage', message);
+                    displayMessage(message, true);
+                    input.value = '';
+                } catch (error) {
+                    console.error('❌ Failed to send message:', error);
+                    addSystemMessage(`❌ Failed to send message: ${error.message}`);
+                }
+            }
+        }
+
+        async function createCrawlJob(url, userPrompt) {
+            try {
+                addSystemMessage(`🚀 Initiating crawl request: ${url}`);
+
+                // Create message following ChatMessageDto structure for SignalR
+                const message = {
+                    messageId: generateGuid(),
+                    conversationId: state.conversationId,  // Correct field name
+                    userId: state.userId,
+                    userName: state.userName,
+                    content: `${userPrompt} | ${url}`,  // Format: "prompt | url"
+                    messageType: 1,  // MessageType.CrawlRequest
+                    groupId: state.groupId !== 'demo' ? state.groupId : null,
+                    assignmentId: state.assignmentId !== 'demo' ? state.assignmentId : null,
+                    timestamp: new Date().toISOString()
+                };
+
+                console.log('📤 Sending crawl message via SignalR:', message);
+
+                // Send via SignalR hub - this creates conversation message and triggers crawl
+                await state.connection.invoke('SendCrawlerMessage', message);
+                
+                console.log('✅ Crawl request sent via SignalR');
+                
+            } catch (error) {
+                console.error('❌ Failed to send crawl request:', error);
+                addSystemMessage(`❌ Failed to create crawl job: ${error.message}`);
+            }
+        }
+
+        // ========== Results Display ==========
+        async function fetchAndDisplayResults(messageId, jobId) {
+            try {
+                console.log('📥 Fetching results for message:', messageId, 'job:', jobId);
+                rememberLatestJob(jobId);
+
+                // Fetch results from API - correct endpoint is /api/smart-crawler/job/{id}/results
+                const response = await fetch(`${CONFIG.crawlerServiceUrl}/api/smart-crawler/job/${jobId}/results`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    console.warn(`⚠️ Could not fetch detailed results: ${response.status} ${response.statusText}`);
+                    addSystemMessage(`⚠️ Could not fetch results: ${response.status}`);
+                    return;
+                }
+
+                const results = await response.json();
+                console.log('📊 Results fetched:', results);
+                console.log('📊 Results type:', Array.isArray(results) ? 'Array' : 'Object', 'Length/Keys:', Array.isArray(results) ? results.length : Object.keys(results));
+
+                if (Array.isArray(results) && results.length > 0) {
+                    console.log('📊 First result sample:', results[0]);
+                }
+
+                displayDetailedResults(results);
+            } catch (error) {
+                console.error('❌ Failed to fetch results:', error);
+                addSystemMessage(`❌ Error fetching results: ${error.message}`);
+                // Results will be shown from SignalR event data instead
+            }
+        }
+
+        function displayDetailedResults(results) {
+            const container = document.getElementById('resultsContent');
+
+            // Clear empty state
+            const emptyState = container.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            // Handle array of CrawlResultDto from API
+            if (Array.isArray(results)) {
+                // Extract all the data items from results
+                const allData = [];
+                results.forEach(result => {
+                    if (result.extractedData) {
+                        // Handle multiple formats: array, object/dictionary, JSON string
+                        if (Array.isArray(result.extractedData)) {
+                            allData.push(...result.extractedData);
+                        } else if (typeof result.extractedData === 'object' && result.extractedData !== null) {
+                            // Single Dictionary from C# - wrap as array item
+                            allData.push(result.extractedData);
+                        } else if (typeof result.extractedData === 'string') {
+                            // JSON string - parse it
+                            try {
+                                const parsed = JSON.parse(result.extractedData);
+                                if (Array.isArray(parsed)) {
+                                    allData.push(...parsed);
+                                } else if (typeof parsed === 'object' && parsed !== null) {
+                                    allData.push(parsed);
+                                }
+                            } catch (e) {
+                                console.warn('Failed to parse extractedData JSON:', e);
+                            }
+                        }
+                    }
+                });
+
+                if (allData.length > 0) {
+                    displayDataTable(allData);
+                    addSystemMessage(`✅ Displaying ${allData.length} extracted items`);
+                } else {
+                    addSystemMessage('⚠️ No extracted data found in results');
+                }
+                return;
+            }
+
+            // Legacy format support (if results is an object with specific structure)
+            // Display summary
+            if (results.summary) {
+                const summaryCard = document.createElement('div');
+                summaryCard.className = 'result-card';
+                summaryCard.innerHTML = `
+                    <h3>📝 AI Summary</h3>
+                    <div class="summary-text">${escapeHtml(results.summary)}</div>
+                `;
+                container.insertBefore(summaryCard, container.firstChild);
+            }
+
+            // Display visualization
+            if (results.visualization && results.chartData) {
+                displayVisualization(results.visualization, results.chartData);
+            }
+
+            // Display extracted data
+            if (results.extractedData && results.extractedData.length > 0) {
+                displayDataTable(results.extractedData);
+            }
+        }
+
+        // ========== Crawl Summaries ==========
+        async function fetchAndDisplaySummary(jobId, options = {}) {
+            if (!state.token) {
+                addSystemMessage('⚠️ Please login before requesting summaries.');
+                return;
+            }
+
+            const normalizedJobId = typeof jobId === 'string' ? jobId : jobId?.toString?.();
+            if (!normalizedJobId) {
+                addSystemMessage('⚠️ No crawl job available for summarization yet.');
+                return;
+            }
+
+            if (state.summaryLoading) {
+                if ((options.source || 'manual') !== 'keyword') {
+                    addSystemMessage('⏳ Already preparing a summary, please wait...');
+                }
+                return;
+            }
+
+            const source = options.source || 'manual';
+
+            try {
+                setSummaryLoading(true, source);
+                const introText = source === 'keyword'
+                    ? '🧠 Agent noticed a summary request, preparing insights...'
+                    : '🧠 Asking agent to summarize the latest crawl...';
+                addSystemMessage(introText);
+
+                const response = await fetch(`${CONFIG.crawlerServiceUrl}/api/analytics/jobs/${normalizedJobId}/summary`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const reason = await response.text();
+                    throw new Error(reason || `Request failed with status ${response.status}`);
+                }
+
+                const summary = await response.json();
+                state.lastSummary = {
+                    ...summary,
+                    jobId: normalizedJobId,
+                    fetchedAt: new Date().toISOString(),
+                    source
+                };
+                state.summaryError = null;
+
+                renderSummaryCard(summary, { jobId: normalizedJobId, source });
+            } catch (error) {
+                console.error('❌ Summary fetch failed:', error);
+                state.summaryError = error.message;
+                addSystemMessage(`❌ Failed to load summary: ${error.message}`);
+            } finally {
+                setSummaryLoading(false, null);
+            }
+        }
+
+        function renderSummaryCard(summary, context = {}) {
+            console.log('🎨 Rendering Summary Card:', summary); // DEBUG LOG
+
+            const container = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message agent summary';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            const highlightSource = summary.insightHighlights ?? summary.InsightHighlights ?? [];
+            const coverageSource = summary.fieldCoverage ?? summary.FieldCoverage ?? [];
+            const chartSource = summary.chartPreviews ?? summary.ChartPreviews ?? [];
+
+            const highlights = Array.isArray(highlightSource) ? highlightSource : [];
+            const coverage = Array.isArray(coverageSource) ? coverageSource : [];
+            const chartPreviews = Array.isArray(chartSource) ? chartSource : [];
+            
+            console.log('📊 Charts found:', chartPreviews.length, chartPreviews); // DEBUG LOG
+
+            const highlightContent = highlights.length
+                ? highlights.map(text => `<div>• ${escapeHtml(text)}</div>`).join('')
+                : '<div>AI did not highlight specific insights yet.</div>';
+
+            const coverageContent = coverage.length
+                ? coverage
+                    .slice(0, 3)
+                    .map(field => {
+                        const name = field.fieldName || field.FieldName || 'Field';
+                        const percent = field.coveragePercent ?? field.CoveragePercent ?? '0';
+                        return `<span>${escapeHtml(name)}: ${percent}%</span>`;
+                    })
+                    .join(' • ')
+                : 'Coverage details unavailable';
+
+            const rawSummaryText = summary.summaryText || summary.SummaryText || 'No summary text available.';
+            const summaryText = formatMultilineText(rawSummaryText);
+            const summaryBodyHtml = escapeHtml(summaryText).replace(/\n/g, '<br>');
+
+            const sourceLabel = context.source === 'keyword' ? 'Auto keyword' : 'Manual request';
+
+            const jobIdLabel = context.jobId ? String(context.jobId) : null;
+            
+            // Generate unique ID for charts container
+            const chartsContainerId = `summary-charts-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+            bubble.innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <span>🧠 Crawl Summary</span>
+                        ${jobIdLabel ? `<span style="font-size: 12px; color: #94a3b8;">Job ${jobIdLabel.substring(0, 8)}...</span>` : ''}
+                    </div>
+                    <div class="summary-body">${summaryBodyHtml}</div>
+                    
+                    <!-- Charts Section -->
+                    <div id="${chartsContainerId}" class="summary-charts-container">
+                        ${chartPreviews.length === 0 ? '<div style="padding:10px; color:#999; font-size:12px; font-style:italic;">No charts generated for this data.</div>' : ''}
+                    </div>
+
+                    <div class="summary-highlight">
+                        <div style="font-weight: 600; margin-bottom: 6px;">Key Insights</div>
+                        ${highlightContent}
+                    </div>
+                    <div class="summary-footer">
+                        <span>Coverage: ${coverageContent}</span>
+                    </div>
+                    <div class="summary-footer" style="margin-top: 4px;">
+                        <span>Source: ${sourceLabel}</span>
+                        <span>${new Date().toLocaleTimeString()}</span>
+                    </div>
+                </div>
+            `;
+
+            messageDiv.appendChild(bubble);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+
+            // Render charts if available
+            if (chartPreviews.length > 0) {
+                const chartsContainer = document.getElementById(chartsContainerId);
+                if (chartsContainer) {
+                    chartPreviews.forEach((chartData, index) => {
+                        // Only render if we have actual data
+                        if (!chartData.chartData && !chartData.ChartData) return;
+
+                        const canvasId = `${chartsContainerId}-canvas-${index}`;
+                        const chartWrapper = document.createElement('div');
+                        chartWrapper.className = 'chart-wrapper';
+                        chartWrapper.style.marginTop = '15px';
+                        chartWrapper.style.marginBottom = '10px';
+                        chartWrapper.style.height = '250px';
+                        chartWrapper.style.position = 'relative';
+                        
+                        const title = chartData.title || chartData.Title || 'Chart';
+                        chartWrapper.innerHTML = `
+                            <div style="font-size: 12px; font-weight: 600; margin-bottom: 5px; color: #555;">${escapeHtml(title)}</div>
+                            <canvas id="${canvasId}"></canvas>
+                        `;
+                        chartsContainer.appendChild(chartWrapper);
+
+                        try {
+                            const ctx = document.getElementById(canvasId);
+                            let config = chartData.chartData || chartData.ChartData;
+                            
+                            // If config is string, parse it
+                            if (typeof config === 'string') {
+                                config = JSON.parse(config);
+                            }
+                            
+                            // Ensure it's a valid object before creating Chart
+                            if (config && typeof config === 'object') {
+                                new Chart(ctx, config);
+                            } else {
+                                console.warn('Invalid chart configuration:', config);
+                                chartWrapper.innerHTML += '<div style="color: #999; font-size: 12px;">Invalid chart data</div>';
+                            }
+                        } catch (e) {
+                            console.error('Failed to render summary chart:', e);
+                            chartWrapper.innerHTML += `<div style="padding: 10px; color: #999; font-size: 12px;">Failed to render chart: ${e.message}</div>`;
+                        }
+                    });
+                }
+            }
+
+            state.messages.push({
+                messageId: generateGuid(),
+                messageType: 99,
+                content: rawSummaryText,
+                sentAt: new Date().toISOString(),
+                metadata: {
+                    jobId: context.jobId,
+                    summary
+                }
+            });
+        }
+
+        function displayVisualization(suggestion, data) {
+            const container = document.getElementById('resultsContent');
+
+            const chartCard = document.createElement('div');
+            chartCard.className = 'result-card';
+            const canvasId = `chart${Date.now()}`;
+
+            chartCard.innerHTML = `
+                <h3>📊 ${suggestion.chartType.toUpperCase()} Chart</h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">${escapeHtml(suggestion.reasoning)}</p>
+                <div class="chart-container">
+                    <canvas id="${canvasId}"></canvas>
+                </div>
+            `;
+
+            container.insertBefore(chartCard, container.firstChild);
+
+            // Render chart
+            const canvas = document.getElementById(canvasId);
+            renderChart(canvas, suggestion, data);
+        }
+
+        function renderChart(canvas, suggestion, data) {
+            try {
+                const chartConfig = JSON.parse(data);
+                new Chart(canvas, chartConfig);
+            } catch (error) {
+                console.error('❌ Failed to render chart:', error);
+                canvas.parentElement.innerHTML = '<p style="color: #999;">Failed to render chart</p>';
+            }
+        }
+
+        function displayDataTable(data) {
+            const container = document.getElementById('resultsContent');
+
+            const tableCard = document.createElement('div');
+            tableCard.className = 'result-card';
+
+            const fields = Object.keys(data[0] || {});
+            const maxRows = Math.min(data.length, 10);
+
+            let tableHtml = '<h3>📋 Extracted Data</h3>';
+            tableHtml += `<p style="font-size: 12px; color: #666; margin-bottom: 10px;">Showing ${maxRows} of ${data.length} items</p>`;
+            tableHtml += '<table class="data-table"><thead><tr>';
+
+            fields.forEach(field => {
+                tableHtml += `<th>${escapeHtml(field)}</th>`;
+            });
+            tableHtml += '</tr></thead><tbody>';
+
+            for (let i = 0; i < maxRows; i++) {
+                tableHtml += '<tr>';
+                fields.forEach(field => {
+                    const value = data[i][field];
+                    const displayValue = value !== null && value !== undefined ? String(value) : '';
+                    const truncated = displayValue.length > 50 ? displayValue.substring(0, 50) + '...' : displayValue;
+                    tableHtml += `<td>${escapeHtml(truncated)}</td>`;
+                });
+                tableHtml += '</tr>';
+            }
+
+            tableHtml += '</tbody></table>';
+            tableCard.innerHTML = tableHtml;
+
+            container.insertBefore(tableCard, container.firstChild);
+        }
+
+        // ========== Job Management ==========
+        function addJobToList(jobId, url, status) {
+            state.jobs[jobId] = {
+                jobId,
+                url,
+                status,
+                progress: 0,
+                createdAt: new Date()
+            };
+            updateJobsDisplay();
+        }
+
+        function updateJobStatus(jobId, status, progress) {
+            if (state.jobs[jobId]) {
+                state.jobs[jobId].status = status;
+                state.jobs[jobId].progress = progress || 0;
+                updateJobsDisplay();
+            }
+        }
+
+        function updateJobProgress(jobId, progress, message) {
+            if (state.jobs[jobId]) {
+                state.jobs[jobId].progress = progress;
+                state.jobs[jobId].progressMessage = message;
+                updateJobsDisplay();
+            }
+        }
+
+        function updateJobsDisplay() {
+            const container = document.getElementById('jobsContent');
+            const jobs = Object.values(state.jobs).sort((a, b) => b.createdAt - a.createdAt);
+
+            if (jobs.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No crawl jobs yet</p></div>';
+                return;
+            }
+
+            container.innerHTML = jobs.map(job => {
+                // Determine current phase based on job data
+                let phaseIndicator = '';
+                if (job.status === 'completed') {
+                    phaseIndicator = '<span style="color: #4caf50;">✅ Completed</span>';
+                } else if (job.extractionEvent) {
+                    const extracting = job.extractionEvent === 'DataExtractionStarted';
+                    phaseIndicator = `<span style="color: ${extracting ? '#ff9800' : '#4caf50'};">🔍 ${extracting ? 'Extracting' : 'Extraction Complete'}</span>`;
+                } else if (job.currentPage) {
+                    phaseIndicator = `<span style="color: #2196f3;">📄 Pagination (Page ${job.currentPage}${job.maxPages ? `/${job.maxPages}` : ''})</span>`;
+                } else if (job.navigationEvent) {
+                    const eventNames = {
+                        'NavigationPlanningStarted': '🗺️ Planning',
+                        'NavigationPlanningCompleted': '✅ Plan Ready',
+                        'NavigationExecutionStarted': '🚀 Navigating',
+                        'NavigationStepCompleted': '✓ Navigating'
+                    };
+                    const displayName = eventNames[job.navigationEvent] || job.navigationEvent;
+                    phaseIndicator = `<span style="color: #9c27b0;">${displayName}</span>`;
+                } else if (job.status === 'running') {
+                    phaseIndicator = '<span style="color: #2196f3;">🔄 Running</span>';
+                } else {
+                    phaseIndicator = '<span style="color: #757575;">⏸️ Pending</span>';
+                }
+
+                // Build detail lines
+                let details = [];
+                if (job.currentStep && job.totalSteps) {
+                    details.push(`Step ${job.currentStep}/${job.totalSteps}${job.navigationAction ? ` (${job.navigationAction})` : ''}`);
+                }
+                if (job.currentPage) {
+                    details.push(`${job.totalPages} pages collected`);
+                }
+                if (job.itemsExtracted) {
+                    details.push(`${job.itemsExtracted} items extracted`);
+                }
+
+                return `
+                    <div class="job-item">
+                        <div class="job-header">
+                            <div class="job-title">${escapeHtml(job.url.substring(0, 50))}...</div>
+                            <div class="job-status ${job.status}">${job.status.toUpperCase()}</div>
+                        </div>
+                        <div class="job-meta">
+                            Job ID: ${job.jobId.substring(0, 8)}... • ${formatTime(job.createdAt)}
+                        </div>
+                        <div class="job-meta" style="margin-top: 4px;">
+                            ${phaseIndicator}
+                            ${details.length > 0 ? ` • ${details.join(' • ')}` : ''}
+                        </div>
+                        ${job.progress > 0 ? `
+                            <div class="job-progress">
+                                <div class="job-progress-bar" style="width: ${job.progress}%"></div>
+                            </div>
+                        ` : ''}
+                        ${job.progressMessage ? `<div class="job-meta" style="margin-top: 4px;">${escapeHtml(job.progressMessage)}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== Message Display ==========
+        function displayMessage(message, isLocal = false) {
+            // Normalize metadata/visualization data
+            let parsedMetadata = {};
+            
+            // 1. Try message.metadata
+            if (message.metadata) {
+                if (typeof message.metadata === 'string') {
+                    try { parsedMetadata = JSON.parse(message.metadata); } catch (e) {}
+                } else {
+                    parsedMetadata = { ...message.metadata };
+                }
+            }
+
+            // 2. Try message.visualizationData (the main carrier for Agent Summary metadata)
+            if (message.visualizationData) {
+                let vizSource = message.visualizationData;
+                if (typeof vizSource === 'string') {
+                    try { vizSource = JSON.parse(vizSource); } catch (e) {}
+                }
+
+                if (typeof vizSource === 'object' && vizSource !== null) {
+                    // Check if this is the wrapper object
+                    if (vizSource.insightHighlights || vizSource.visualizationData || vizSource.latestResultCrawlJobId) {
+                        parsedMetadata = { ...parsedMetadata, ...vizSource };
+                    } else if (vizSource.type && vizSource.data) {
+                        // It's the chart config itself
+                        parsedMetadata.visualizationData = vizSource;
+                    } else {
+                        parsedMetadata = { ...parsedMetadata, ...vizSource };
+                    }
+                }
+            }
+
+            const highlights = parsedMetadata.insightHighlights || [];
+            const chartConfig = parsedMetadata.visualizationData;
+            const hasChart = !!chartConfig;
+
+            const container = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+
+            const messageType = getMessageTypeValue(message);
+            const isUser = messageType === 0 || messageType === 1 || messageType === 6;
+            const isCrawlRequest = messageType === 1;
+            const isCrawlResult = messageType === 2;
+            const isAiSummary = messageType === 5;
+            const isVisualization = messageType === 4;
+
+            messageDiv.className = `message ${isUser ? 'user' : 'agent'}${isCrawlRequest ? ' crawl-request' : ''}${isAiSummary ? ' summary' : ''}${isVisualization ? ' visualization' : ''}`;
+            messageDiv.dataset.messageId = message.messageId;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+
+            const sentAtSource = message.sentAt || message.timestamp || message.Timestamp || new Date().toISOString();
+            const sentAt = typeof sentAtSource === 'string'
+                ? sentAtSource
+                : (sentAtSource instanceof Date ? sentAtSource.toISOString() : new Date(sentAtSource).toISOString());
+
+            const jobIdLabel = message.crawlJobId ? String(message.crawlJobId) : null;
+
+            // Generate unique ID for chart if needed
+            const chartCanvasId = `chart-${message.messageId}-${Date.now()}`;
+
+            if (isAiSummary) {
+                const summaryHtml = escapeHtml(formatMultilineText(message.content || '')).replace(/\n/g, '<br>');
+                
+                const highlightsHtml = highlights.length > 0 
+                    ? `<div class="summary-highlights" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 13px;">
+                        <div style="font-weight: 600; margin-bottom: 5px; color: #475569;">✨ Key Insights</div>
+                        ${highlights.map(h => `<div style="margin-bottom: 4px;">• ${escapeHtml(h)}</div>`).join('')}
+                       </div>`
+                    : '';
+
+                bubble.innerHTML = `
+                    <div class="summary-card">
+                        <div class="summary-header">
+                            <span>🧠 Agent Summary</span>
+                            ${jobIdLabel ? `<span style="font-size: 12px; color: #94a3b8;">Job ${jobIdLabel.substring(0, 8)}...</span>` : ''}
+                        </div>
+                        <div class="summary-body">${summaryHtml}</div>
+                        
+                        ${highlightsHtml}
+
+                        ${hasChart ? `
+                        <div class="summary-chart-container" style="margin-top: 15px; height: 250px; position: relative;">
+                            <canvas id="${chartCanvasId}"></canvas>
+                        </div>
+                        ` : ''}
+
+                        <div class="summary-footer">
+                            <span>Saved in conversation</span>
+                            <span>${formatTime(sentAt)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (isVisualization) {
+                bubble.innerHTML = `
+                    <div class="result-card" style="margin: 0; padding: 10px;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">📊 Visualization</div>
+                        <div style="font-size: 13px; margin-bottom: 10px;">${escapeHtml(message.content || '')}</div>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="${chartCanvasId}"></canvas>
+                        </div>
+                    </div>
+                    <div class="message-meta">${formatTime(sentAt)}</div>
+                `;
+            } else {
+                let icon = '';
+                if (isCrawlRequest) icon = '🔗';
+                else if (messageType === 2) icon = '✅';
+                else if (isUser) icon = '👤';
+                else icon = '🤖';
+
+                bubble.innerHTML = `
+                    <div><span class="message-icon">${icon}</span>${escapeHtml(message.content)}</div>
+                    <div class="message-meta">${formatTime(sentAt)}</div>
+                `;
+            }
+
+            messageDiv.appendChild(bubble);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+
+            // Render chart if applicable
+            if ((isAiSummary || isVisualization) && hasChart) {
+                const ctx = document.getElementById(chartCanvasId);
+                if (ctx) {
+                    try {
+                        new Chart(ctx, chartConfig);
+                    } catch (e) {
+                        console.error('Failed to render message chart:', e);
+                        ctx.parentElement.innerHTML = '<div style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Failed to load chart</div>';
+                    }
+                }
+            }
+
+            if (message.crawlJobId && (isCrawlResult || isAiSummary)) {
+                rememberLatestJob(message.crawlJobId);
+            }
+
+            // Don't auto-fetch summary if the message already contains summary data
+            // (to avoid duplicate summaries in the UI)
+            if (!state.isHydratingHistory && isAiSummary && message.crawlJobId) {
+                const alreadyRendered = state.lastSummary && state.lastSummary.jobId === message.crawlJobId;
+                const messageHasSummaryData = message.content && message.content.length > 100; // Summary messages have substantial content
+                if (!alreadyRendered && !messageHasSummaryData) {
+                    fetchAndDisplaySummary(message.crawlJobId, { source: 'keyword' })
+                        .catch(err => console.error('Auto summary fetch failed', err));
+                }
+            }
+
+            state.messages.push({
+                ...message,
+                sentAt
+            });
+        }
+
+        function addSystemMessage(text) {
+            const container = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message agent';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.style.background = '#f0f0f0';
+            bubble.style.color = '#666';
+            bubble.style.fontSize = '13px';
+            bubble.innerHTML = `<div>${text}</div>`;
+
+            messageDiv.appendChild(bubble);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function fetchCrawlResults(jobId) {
+            try {
+                addSystemMessage('📥 Fetching crawl results...');
+                rememberLatestJob(jobId);
+                
+                const response = await fetch(`${CONFIG.crawlerServiceUrl}/api/smart-crawler/job/${jobId}/results`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch results: ${response.status}`);
+                }
+
+                // WebCrawlerService returns List<CrawlResultDto> directly, not wrapped
+                const results = await response.json();
+                console.log('📦 Crawl results received:', results);
+                
+                if (Array.isArray(results) && results.length > 0) {
+                    addSystemMessage(`✅ Retrieved ${results.length} result(s)`);
+                    displayDetailedResults(results);
+                    switchTab('results');
+                } else {
+                    addSystemMessage('⚠️ No results available yet');
+                }
+            } catch (error) {
+                console.error('Error fetching crawl results:', error);
+                addSystemMessage(`❌ Failed to fetch results: ${error.message}`);
+            }
+        }
+
+        function displayCrawlResults(results) {
+            const container = document.getElementById('resultsContent');
+            
+            // Clear previous results
+            container.innerHTML = '';
+            
+            // Results is an array of CrawlResultDto
+            if (!Array.isArray(results) || results.length === 0) {
+                container.innerHTML = '<div class="empty-state">⚠️ No results available</div>';
+                return;
+            }
+            
+            // Create results header
+            const header = document.createElement('div');
+            header.style.padding = '20px';
+            header.style.borderBottom = '1px solid #e0e0e0';
+            header.innerHTML = `
+                <h3>Crawl Results</h3>
+                <p>Total results: ${results.length}</p>
+            `;
+            container.appendChild(header);
+            
+            // Display each result
+            const itemsContainer = document.createElement('div');
+            itemsContainer.style.padding = '20px';
+            
+            results.forEach((result, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.style.marginBottom = '16px';
+                itemDiv.style.padding = '12px';
+                itemDiv.style.border = '1px solid #e0e0e0';
+                itemDiv.style.borderRadius = '8px';
+                
+                // Format extracted data
+                let extractedDataHtml = '';
+                if (result.extractedData) {
+                    extractedDataHtml = `<pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; overflow-x: auto; max-height: 300px;">${JSON.stringify(result.extractedData, null, 2)}</pre>`;
+                }
+                
+                itemDiv.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 8px;">
+                        ${result.title || 'Result ' + (index + 1)}
+                    </div>
+                    <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                        <strong>URL:</strong> ${result.url || 'N/A'}<br>
+                        <strong>Status:</strong> ${result.httpStatusCode || 'N/A'} | 
+                        <strong>Size:</strong> ${result.contentSize ? (result.contentSize / 1024).toFixed(2) + ' KB' : 'N/A'} |
+                        <strong>Time:</strong> ${result.responseTimeMs ? result.responseTimeMs + ' ms' : 'N/A'}
+                    </div>
+                    ${extractedDataHtml}
+                `;
+                itemsContainer.appendChild(itemDiv);
+            });
+            
+            container.appendChild(itemsContainer);
+        }
+
+        // ========== UI Actions ==========
+        async function askAgentForSummary() {
+            if (state.summaryLoading) {
+                addSystemMessage('⏳ Summary request already in progress...');
+                return;
+            }
+
+            if (!state.latestCrawlJobId) {
+                addSystemMessage('⚠️ Run a crawl first so I know what to summarize.');
+                return;
+            }
+
+            await fetchAndDisplaySummary(state.latestCrawlJobId, { source: 'manual' });
+        }
+
+        function switchTab(tab) {
+            state.currentTab = tab;
+
+            // Update buttons
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                // If called programmatically (no event), try to match button by text or onclick
+                if (!event && btn.getAttribute('onclick').includes(`'${tab}'`)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // If called via click event
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            // Update content
+            if (tab === 'results') {
+                document.getElementById('resultsContent').style.display = 'block';
+                document.getElementById('jobsContent').style.display = 'none';
+            } else if (tab === 'jobs') {
+                document.getElementById('resultsContent').style.display = 'none';
+                document.getElementById('jobsContent').style.display = 'block';
+            }
+        }
+
+        function clearChat() {
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '';
+            state.messages = [];
+            addSystemMessage('💬 Chat cleared');
+        }
+
+        function updateStatus(text, isConnected) {
+            document.getElementById('statusText').textContent = text;
+            const dot = document.getElementById('statusDot');
+            if (isConnected) {
+                dot.classList.add('connected');
+            } else {
+                dot.classList.remove('connected');
+            }
+        }
+
+        // ========== Utility Functions ==========
+        function formatMultilineText(text) {
+            if (!text) return '';
+            return text.replace(/\\n/g, '\n');
+        }
+
+        function getMessageTypeValue(message) {
+            if (!message) return 0;
+            const rawType = message.messageType ?? message.MessageType ?? 0;
+            if (typeof rawType === 'number') {
+                return rawType;
+            }
+
+            if (typeof rawType === 'string') {
+                const mapping = {
+                    'usermessage': 0,
+                    'crawlrequest': 1,
+                    'crawlresult': 2,
+                    'systemnotification': 3,
+                    'visualization': 4,
+                    'aisummary': 5,
+                    'followupquestion': 6
+                };
+                return mapping[rawType.toLowerCase()] ?? 0;
+            }
+
+            return 0;
+        }
+
+        function generateGuid() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return '--:--';
+            }
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    </script>
+</body>
+</html>

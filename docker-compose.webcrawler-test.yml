@@ -1,0 +1,148 @@
+version: '3.8'
+
+# ==============================================================================
+# WebCrawler Service - Test Environment
+# Isolated testing setup with full Android emulator + MCP + Gemini LLM
+# ==============================================================================
+
+services:
+  # ============================================================================
+  # INFRASTRUCTURE SERVICES
+  # ============================================================================
+
+  # SQL Server 2022 - Database for WebCrawler
+  
+  # Redis - Caching layer for LLM results and screen states
+  
+  # Zookeeper - Required for Kafka
+ 
+  # Kafka - Event streaming (optional for now, but setup for future)
+ 
+  # ============================================================================
+  # MOBILE AUTOMATION STACK
+  # ============================================================================
+  # NOTE: Using host AVD (emulator-5554) instead of containerized Android
+  # The AVD must be running on the host before starting docker-compose
+
+  # Python MCP Server with Appium - Connects to host AVD via ADB
+  
+  # ============================================================================
+  # WEBCRAWLER SERVICE
+  # ============================================================================
+
+ 
+  # ============================================================================
+  # CRAWL4AI AGENT - Intelligent web crawling with Gemini LLM
+  # ============================================================================
+
+  crawl4ai-agent-1:
+    build:
+      context: ./MCP-Servers/crawl4ai-agent
+      dockerfile: Dockerfile
+    container_name: webcrawler-crawl4ai-1
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092
+      - KAFKA_ENABLED=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - webcrawler-test
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  crawl4ai-agent-2:
+    build:
+      context: ./MCP-Servers/crawl4ai-agent
+      dockerfile: Dockerfile
+    container_name: webcrawler-crawl4ai-2
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092
+      - KAFKA_ENABLED=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8002:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - webcrawler-test
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  crawl4ai-agent-3:
+    build:
+      context: ./MCP-Servers/crawl4ai-agent
+      dockerfile: Dockerfile
+    container_name: webcrawler-crawl4ai-3
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092
+      - KAFKA_ENABLED=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8003:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - webcrawler-test
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+# ==============================================================================
+# VOLUMES
+# ==============================================================================
+
+volumes:
+  sqlserver-test-data:
+    driver: local
+  redis-test-data:
+    driver: local
+  zookeeper-test-data:
+    driver: local
+  zookeeper-test-logs:
+    driver: local
+  kafka-test-data:
+    driver: local
+  mcp-logs:
+    driver: local
+  webcrawler-logs:
+    driver: local
+  crawl-data:
+    driver: local
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+
+networks:
+  webcrawler-test:
+    driver: bridge
+    name: webcrawler-test-network

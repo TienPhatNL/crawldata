@@ -1,0 +1,102 @@
+# ==============================================================================
+# WebCrawler Service - Docker Ignore File
+# Excludes unnecessary files from Docker build context for faster builds
+# ==============================================================================
+
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/publish/
+**/build/
+
+# IDE and Editor files
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+.DS_Store
+
+# User-specific files
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+
+# Test results
+**/TestResults/
+**/*.trx
+**/*.coverage
+
+# Database migrations (generated at runtime)
+**/Migrations/
+
+# Logs
+**/*.log
+**/logs/
+**/Logs/
+
+# Environment files (use Docker-specific config instead)
+**/.env
+**/.env.*
+!**/.env.example
+
+# NuGet packages
+**/packages/
+**/*.nupkg
+
+# Node modules (if any frontend assets)
+**/node_modules/
+**/npm-debug.log
+**/yarn-error.log
+
+# Git files
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# Documentation (not needed in runtime image)
+**/*.md
+!**/README.md
+
+# Docker files (avoid recursion)
+**/Dockerfile*
+**/.dockerignore
+**/docker-compose*.yml
+
+# Temporary files
+**/tmp/
+**/temp/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Rider
+.idea/
+
+# Unnecessary config files
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# Keep only production configs
+# appsettings.json and appsettings.Docker.json will be included

@@ -1,0 +1,40 @@
+# Training Agent Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY self-learning-agent/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy crawl4ai-agent dependency from parent directory
+# This Dockerfile expects to be built from MCP-Servers directory:
+# docker build -t training -f self-learning-agent/Dockerfile.training .
+COPY crawl4ai-agent /app/crawl4ai-agent
+
+# Copy application code
+COPY self-learning-agent/config.py self-learning-agent/gemini_client.py self-learning-agent/training_agent.py ./
+COPY self-learning-agent/agents/ ./agents/
+COPY self-learning-agent/algorithms/ ./algorithms/
+COPY self-learning-agent/knowledge/ ./knowledge/
+
+# Create knowledge database directory
+RUN mkdir -p /app/knowledge_db
+
+# Set Python path to include crawl4ai-agent
+ENV PYTHONPATH="${PYTHONPATH}:/app/crawl4ai-agent"
+
+EXPOSE 8091
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8091/health || exit 1
+
+CMD [\"uvicorn\", ,"training_agent:socket_app", \"--host\", \"0.0.0.0\", \"--port\", \"8091\"]

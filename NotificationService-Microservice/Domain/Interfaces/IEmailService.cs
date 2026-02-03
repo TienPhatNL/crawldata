@@ -1,0 +1,7 @@
+namespace NotificationService.Domain.Interfaces;
+
+public interface IEmailService
+{
+    Task SendEmailAsync(string toEmail, string subject, string body, CancellationToken cancellationToken = default);
+    Task SendEmailAsync(IEnumerable<string> toEmails, string subject, string body, CancellationToken cancellationToken = default);
+}

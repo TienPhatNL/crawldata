@@ -1,0 +1,1 @@
+{"detail":[{"type":"missing","loc":["body","context"],"msg":"Field required","input":{"query":"List all 200 products. Format: number | name | brand | price. Do NOT truncate, list ALL from 1 to 200."}}]}
